@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="aaab440e-3055-46db-8baa-79421add60a6" >
+		<http:listener-connection host="localhost" port="8081" />
+	</http:listener-config>
+	<ee:object-store-caching-strategy name="Caching_Strategy" doc:name="Caching Strategy" doc:id="1c7733b2-31b3-4c23-a290-6fa892771f2d" keyGenerationExpression="#[payload.id]" >
+		<os:private-object-store maxEntries="5" entryTtl="5"/>
+	</ee:object-store-caching-strategy>
+	<flow name="cachingFlow" doc:id="e24180e3-e543-40f7-bdaa-3740807b47f8" >
+		<http:listener doc:name="Listener" doc:id="1e7f7930-d916-4f40-8c68-b469c55c4900" config-ref="HTTP_Listener_config" path="/caching"/>
+		<logger level="INFO" doc:name="Logger" doc:id="107c9925-cd54-4702-80d4-a6bdc42b6430" message="payload"/>
+		<ee:cache doc:name="Cache" doc:id="837561dd-64e0-4ff0-a43c-16b9f16797a5" cachingStrategy-ref="Caching_Strategy">
+			<logger level="INFO" doc:name="Logger" doc:id="d386f796-ee8a-4c3e-a816-fe8b09aa88df" message="cache started"/>
+			<set-variable value="#[vars.myvar]" doc:name="Set Variable" doc:id="88e39299-cf7e-4739-8409-38181760dc7a" variableName="myvar"/>
+			<ee:transform doc:name="Transform Message" doc:id="3a0224f1-af16-42e1-b7fb-528c6af2e93c" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"hello": if(payload.id as Number == 1) 'There' else 'world'
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="92c90c7c-9507-4642-ba92-20c498f19555" message="cache ended"/>
+		</ee:cache>
+		<logger level="INFO" doc:name="Logger" doc:id="31823886-3b44-40a2-bdd6-5323260133d8" message="payload"/>
+	</flow>
+</mule>
